@@ -11,11 +11,19 @@ const defaultOptions = {
 /**
  * types start */
 interface IFunctionsApiOptions {
-  variables?: { [key: string]: any };
+  variables: { [key: string]: any };
   functionPath: string;
 }
 
-type FResolver = (cx: Koa.ParameterizedContext) => any;
+interface functionsApiContext {
+  variables: { [key: string]: any };
+  var: any;
+  functionPath: string;
+}
+
+type ExtendContext = Koa.Context & functionsApiContext;
+
+type FResolver = (cx: ExtendContext) => any;
 
 interface IOptions {
   path?: string;
@@ -38,7 +46,7 @@ interface FnsObject {
 const container = new ContainerClass();
 
 // TODO: combine functionPath
-async function FunctionsApiResolver(cx: Koa.ParameterizedContext) {
+async function FunctionsApiResolver(cx: ExtendContext) {
   let result: IResult = {
     code: 200,
     success: true,
@@ -67,7 +75,7 @@ async function FunctionsApiResolver(cx: Koa.ParameterizedContext) {
       return result;
     }
 
-    const fn = module[functionPath];
+    const fn = module[functionPath[0]];
     if (getArgType(fn).isFunction) {
       const data = await fn.call(cx, cx); // bind context
       result = {
@@ -112,8 +120,9 @@ export function functionsApiMiddleware(options?: IOptions) {
   // store fns
   container.add(namespace as string, fns);
 
-  return async (cx: Koa.ParameterizedContext, next: Koa.Next) => {
+  return async (cx: ExtendContext, next: Koa.Next) => {
     let functionsApiOptions: IFunctionsApiOptions = {
+      variables: {},
       functionPath: ''
     };
     // TODO: support others method

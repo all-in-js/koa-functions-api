@@ -39,7 +39,7 @@ async function FunctionsApiResolver(cx) {
             };
             return result;
         }
-        const fn = module[functionPath];
+        const fn = module[functionPath[0]];
         if (utils_1.getArgType(fn).isFunction) {
             const data = await fn.call(cx, cx); // bind context
             result = {
@@ -84,6 +84,7 @@ function functionsApiMiddleware(options) {
     container.add(namespace, fns);
     return async (cx, next) => {
         let functionsApiOptions = {
+            variables: {},
             functionPath: ''
         };
         // TODO: support others method
