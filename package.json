@@ -1,0 +1,31 @@
+{
+  "name": "koa-functions-api",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "files": ["dist"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/famanoder/koa-functions-api.git"
+  },
+  "author": "famanoder",
+  "scripts": {
+    "prepublishOnly": "rm -rf dist && tsc"
+  },
+  "dependencies": {
+    "@eryue/injector": "^1.2.3",
+    "@iuv-tools/utils": "^1.0.0-beta.2",
+    "@types/koa": "^2.11.6",
+    "koa": "^2.13.0"
+  },
+  "bugs": {
+    "url": "https://github.com/famanoder/koa-functions-api/issues"
+  },
+  "homepage": "https://github.com/famanoder/koa-functions-api.git",
+  "keywords": [
+    "koa",
+    "single route",
+    "router",
+    "function api"
+  ]
+}
