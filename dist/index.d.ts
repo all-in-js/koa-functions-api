@@ -1,17 +1,19 @@
 import Koa from 'koa';
+/**
+ * types start */
+declare type ParamItem = {
+    [key: string]: any;
+};
 interface functionsApiContext {
-    variables: {
-        [key: string]: any;
-    };
-    var: any;
-    functionPath: string;
+    vars: [ParamItem];
+    fns: [string];
 }
 declare type ExtendContext = Koa.Context & functionsApiContext;
-declare type FResolver = (cx: ExtendContext) => any;
+declare type FResolver = (cx: ExtendContext, vars?: ParamItem) => any;
 interface IOptions {
     path?: string;
     namespace?: string;
     functions?: FResolver[];
 }
-export declare function functionsApiMiddleware(options?: IOptions): (cx: ExtendContext, next: Koa.Next) => Promise<"the 'functionPath' expected to be send." | undefined>;
+export declare function functionsApiMiddleware(options?: IOptions): (cx: ExtendContext, next: Koa.Next) => Promise<"the '$fns' expected to be send." | undefined>;
 export {};

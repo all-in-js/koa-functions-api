@@ -10,20 +10,21 @@ const defaultOptions = {
 
 /**
  * types start */
+type ParamItem = { [key: string]: any };
+
 interface IFunctionsApiOptions {
-  variables: { [key: string]: any };
-  functionPath: string;
+  $vars: [ParamItem];
+  $fns: [string];
 }
 
 interface functionsApiContext {
-  variables: { [key: string]: any };
-  var: any;
-  functionPath: string;
+  vars: [ParamItem];
+  fns: [string];
 }
 
 type ExtendContext = Koa.Context & functionsApiContext;
 
-type FResolver = (cx: ExtendContext) => any;
+type FResolver = (cx: ExtendContext, vars?: ParamItem) => any;
 
 interface IOptions {
   path?: string;
@@ -45,55 +46,60 @@ interface FnsObject {
 
 const container = new ContainerClass();
 
-// TODO: combine functionPath
 async function FunctionsApiResolver(cx: ExtendContext) {
-  let result: IResult = {
+  let result: [IResult] = [{
     code: 200,
     success: true,
     msg: 'success',
     data: []
-  };
-  const normallizedPath = cx.functionPath.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
-  const [namespace, ...functionPath] = normallizedPath;
-  if (!functionPath.length) {
-    result = {
-      code: 400,
-      success: false,
-      msg: `the 'functionPath' is invalid. eg: 'namespace/method'`,
-      data: []
-    };
-  } else {
-    // resolve stored fns
-    let [module] = container.resolve(namespace);
-    if (!module) {
-      result = {
-        code: 500,
-        success: false,
-        msg: `functions is not exists.`,
-        data: []
-      };
-      return result;
-    }
+  }];
 
-    const fn = module[functionPath[0]];
-    if (getArgType(fn).isFunction) {
-      const data = await fn.call(cx, cx); // bind context
-      result = {
-        code: 200,
-        success: true,
-        msg: 'ok',
-        data
-      };
-    } else {
-      result = {
-        code: 500,
-        success: false,
-        msg: `please check the function '${functionPath}'`,
-        data: []
-      };
-    }
+  const { fns, vars } = cx;
+  if (fns && fns.length) {
+    fns.forEach(async (fn: string, i: number) => {
+      const normallizedPath = fn.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
+      // TODO: 多层级支持
+      const [namespace, ...functionPath] = normallizedPath;
+      if (!functionPath.length) {
+        result[i] = {
+          code: 400,
+          success: false,
+          msg: `the item of '$fns' is invalid. eg: 'namespace/method'`,
+          data: []
+        };
+      } else {
+        // resolve stored fns
+        let [module] = container.resolve(namespace);
+        if (!module) {
+          result[i] = {
+            code: 500,
+            success: false,
+            msg: `functions is not exists.`,
+            data: []
+          };
+        } else {
+          const fn = module[functionPath[0]];
+          if (getArgType(fn).isFunction) {
+            const data = await fn.call(cx, cx, vars[i]); // bind context
+            result[i] = {
+              code: 200,
+              success: true,
+              msg: 'ok',
+              data
+            };
+          } else {
+            result[i] = {
+              code: 500,
+              success: false,
+              msg: `please check the function '${functionPath}'`,
+              data: []
+            };
+          }
+        }
+      }
+    });
   }
-
+  
   return result;
 }
 
@@ -107,8 +113,8 @@ export function functionsApiMiddleware(options?: IOptions) {
     if (getArgType(item).isFunction) {
       const { name } = item;
       if (!name) {
-        log.warn(`the function has no name, will be skiped:
-          ${item.toString()}
+        log.warn(`the anonymous function will be skiped:
+        ${item.toString()}
         `);
       } else {
         curr[name] = item;
@@ -122,12 +128,33 @@ export function functionsApiMiddleware(options?: IOptions) {
 
   return async (cx: ExtendContext, next: Koa.Next) => {
     let functionsApiOptions: IFunctionsApiOptions = {
-      variables: {},
-      functionPath: ''
+      $vars: [{}],
+      $fns: ['']
     };
     // TODO: support others method
     if (cx.method.toLowerCase() === 'get') {
-      const query = cx.query || {};
+      let query = cx.query || {};
+      try {
+        if (/^\[.*?\]$/.test(query.$fns)) {
+          query.$fns = JSON.parse(query.$fns);
+        } else {
+          query.$fns = [query.$fns];
+        }
+        if (/^\[.*?\]$/.test(query.$vars)) {
+          // 组合模式传值
+          query.$vars = JSON.parse(query.$vars);
+        } else if (/^\{.*\}$/.test(query.$vars)) {
+          // 非组合模式传值
+          query.$vars = [JSON.parse(query.$vars)];
+        } else {
+          // 非法格式传值
+          query.$vars = [{}];
+        }
+      } catch(e) {
+        console.log(e);
+        query = {};
+      }
+
       functionsApiOptions = {
         ...functionsApiOptions,
         ...query
@@ -142,24 +169,29 @@ export function functionsApiMiddleware(options?: IOptions) {
     }
   
     const {
-      variables,
-      functionPath
+      $vars,
+      $fns
     } = functionsApiOptions;
 
-    if (!functionPath) {
+    if (!$fns.length) {
       cx.status = 400;
-      return cx.body = `the 'functionPath' expected to be send.`;
+      return cx.body = `the '$fns' expected to be send.`;
     }
 
     // no matter GET or POST, get value from cx.variables
-    cx.variables = variables;
-    cx.var = variables; // alias
-    cx.functionPath = functionPath;
+    cx.vars = $vars;
+    cx.fns = $fns;
 
     if (cx.path === apiPath) {
-      const { code, ...result } = await FunctionsApiResolver(cx);
-      cx.status = code;
-      cx.body = result;
+      const result = await FunctionsApiResolver(cx);
+      if (result.length === 1) {
+        const [res] = result;
+        const { code, ...rest } = res;
+        cx.status = code;
+        cx.body = rest;
+      } else {
+        cx.body = result;
+      }
     } else {
       // extra routes
       await next();
@@ -167,3 +199,7 @@ export function functionsApiMiddleware(options?: IOptions) {
   }
 }
 
+// {
+//   variables: [{}, {}],
+//   functionPath: ['/api/userInfo', '/api/userList']
+// }
