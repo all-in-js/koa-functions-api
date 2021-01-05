@@ -190,7 +190,10 @@ export function functionsApiMiddleware(options?: IOptions) {
         cx.status = code;
         cx.body = rest;
       } else {
-        cx.body = result;
+        cx.body = {
+          success: true,
+          data: result
+        };
       }
     } else {
       // extra routes
