@@ -22,14 +22,15 @@ interface functionsApiContext {
   fns: [string];
 }
 
-type ExtendContext = Koa.Context & functionsApiContext;
+// 扩展外部context
+export type ExtendContext<ExtraContext> = Koa.Context & functionsApiContext & ExtraContext;
 
-type FResolver = (cx: ExtendContext, vars?: ParamItem) => any;
+type FResolver<ExtraContext> = (cx: ExtendContext<ExtraContext>, vars: ParamItem) => any;
 
-interface IOptions {
+interface IOptions<ExtraContext> {
   path?: string;
   namespace?: string;
-  functions?: FResolver[];
+  functions?: FResolver<ExtraContext>[];
 }
 
 interface IResult {
@@ -39,14 +40,14 @@ interface IResult {
   data: any;
 }
 
-interface FnsObject {
-  [key: string]: FResolver;
+interface FnsObject<ExtraContext> {
+  [key: string]: FResolver<ExtraContext>;
 }
 /** types end */
 
 const container = new ContainerClass();
 
-async function FunctionsApiResolver(cx: ExtendContext) {
+async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext>) {
   let result: [IResult] = [{
     code: 200,
     success: true,
@@ -56,7 +57,8 @@ async function FunctionsApiResolver(cx: ExtendContext) {
 
   const { fns, vars } = cx;
   if (fns && fns.length) {
-    fns.forEach(async (fn: string, i: number) => {
+    for (let i = 0; i < fns.length; i++) {
+      const fn = fns[i];
       const normallizedPath = fn.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
       // TODO: 多层级支持
       const [namespace, ...functionPath] = normallizedPath;
@@ -80,7 +82,7 @@ async function FunctionsApiResolver(cx: ExtendContext) {
         } else {
           const fn = module[functionPath[0]];
           if (getArgType(fn).isFunction) {
-            const data = await fn.call(cx, cx, vars[i]); // bind context
+            const data = await fn.call(cx, cx, vars[i] || {}); // bind context
             result[i] = {
               code: 200,
               success: true,
@@ -97,19 +99,19 @@ async function FunctionsApiResolver(cx: ExtendContext) {
           }
         }
       }
-    });
+    }
   }
   
   return result;
 }
 
-export function functionsApiMiddleware(options?: IOptions) {
+export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraContext>) {
   if (!getArgType(options).isObject) options = defaultOptions;
   options = Object.assign(defaultOptions, options);
 
   const { path: apiPath, namespace, functions } = options;
   // store fns as an object
-  const fns = (functions as FResolver[]).reduce((curr: FnsObject, item) => {
+  const fns = (functions as FResolver<ExtraContext>[]).reduce((curr: FnsObject<ExtraContext>, item) => {
     if (getArgType(item).isFunction) {
       const { name } = item;
       if (!name) {
@@ -126,7 +128,7 @@ export function functionsApiMiddleware(options?: IOptions) {
   // store fns
   container.add(namespace as string, fns);
 
-  return async (cx: ExtendContext, next: Koa.Next) => {
+  return async (cx: ExtendContext<ExtraContext>, next: Koa.Next) => {
     let functionsApiOptions: IFunctionsApiOptions = {
       $vars: [{}],
       $fns: ['']

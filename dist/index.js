@@ -18,7 +18,8 @@ async function FunctionsApiResolver(cx) {
         }];
     const { fns, vars } = cx;
     if (fns && fns.length) {
-        fns.forEach(async (fn, i) => {
+        for (let i = 0; i < fns.length; i++) {
+            const fn = fns[i];
             const normallizedPath = fn.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
             // TODO: 多层级支持
             const [namespace, ...functionPath] = normallizedPath;
@@ -62,7 +63,7 @@ async function FunctionsApiResolver(cx) {
                     }
                 }
             }
-        });
+        }
     }
     return result;
 }
@@ -149,7 +150,10 @@ function functionsApiMiddleware(options) {
                 cx.body = rest;
             }
             else {
-                cx.body = result;
+                cx.body = {
+                    success: true,
+                    data: result
+                };
             }
         }
         else {
