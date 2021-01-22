@@ -10,5 +10,7 @@ interface IOptions<ExtraContext> {
     namespace?: string;
     functions?: FResolver<ExtraContext>[];
 }
-export declare function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraContext>): (cx: ExtendContext<ExtraContext>, next: Koa.Next) => Promise<"the '$fns' expected to be send." | undefined>;
+export declare function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraContext>): (cx: ExtendContext<ExtraContext>, next: Koa.Next) => Promise<{
+    msg: string;
+} | undefined>;
 export {};

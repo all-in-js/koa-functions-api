@@ -32,10 +32,8 @@ interface IOptions<ExtraContext> {
 }
 
 interface IResult {
-  code: number;
-  success: boolean;
   msg: string;
-  data: any;
+  [key: string]: any;
 }
 
 interface FnsObject<ExtraContext> {
@@ -47,10 +45,7 @@ const container = new ContainerClass();
 
 async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext>) {
   let result: [IResult] = [{
-    code: 200,
-    success: true,
-    msg: 'success',
-    data: []
+    msg: 'success'
   }];
 
   const { fns, vars } = cx;
@@ -62,37 +57,23 @@ async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext
       const [namespace, ...functionPath] = normallizedPath;
       if (!functionPath.length) {
         result[i] = {
-          code: 400,
-          success: false,
-          msg: `the item of '$fns' is invalid. eg: 'namespace/method'`,
-          data: []
+          msg: `the item of '$fns' is invalid. eg: 'namespace/method'`
         };
       } else {
         // resolve stored fns
         let [module] = container.resolve(namespace);
         if (!module) {
           result[i] = {
-            code: 500,
-            success: false,
-            msg: `functions is not exists.`,
-            data: []
+            msg: `functions is not exists.`
           };
         } else {
           const fn = module[functionPath[0]];
           if (getArgType(fn).isFunction) {
             const data = await fn.call(cx, cx, vars[i] || {}); // bind context
-            result[i] = {
-              code: 200,
-              success: true,
-              msg: 'ok',
-              data
-            };
+            result[i] = data;
           } else {
             result[i] = {
-              code: 500,
-              success: false,
-              msg: `please check the function '${functionPath}'`,
-              data: []
+              msg: `please check the function '${functionPath}'`
             };
           }
         }
@@ -162,6 +143,12 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
     }
     if (cx.method.toLowerCase() === 'post') {
       const body = (cx.request as any).body || {};
+      if (!getArgType(body.$fns).isArray) {
+        body.$fns = [body.$fns];
+      }
+      if (!getArgType(body.$vars).isArray) {
+          body.$vars = [body.$vars];
+      }
       functionsApiOptions = {
         ...functionsApiOptions,
         ...body
@@ -175,7 +162,9 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
 
     if (!$fns.length) {
       cx.status = 400;
-      return cx.body = `the '$fns' expected to be send.`;
+      return cx.body = {
+        msg: `the '$fns' expected to be send.`
+      };
     }
 
     // no matter GET or POST, get value from cx.variables
@@ -186,14 +175,9 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
       const result = await FunctionsApiResolver(cx);
       if (result.length === 1) {
         const [res] = result;
-        const { code, ...rest } = res;
-        cx.status = code;
-        cx.body = rest;
+        cx.body = res;
       } else {
-        cx.body = {
-          success: true,
-          data: result
-        };
+        cx.body = result;
       }
     } else {
       // extra routes

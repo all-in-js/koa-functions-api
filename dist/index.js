@@ -11,10 +11,7 @@ const defaultOptions = {
 const container = new injector_1.ContainerClass();
 async function FunctionsApiResolver(cx) {
     let result = [{
-            code: 200,
-            success: true,
-            msg: 'success',
-            data: []
+            msg: 'success'
         }];
     const { fns, vars } = cx;
     if (fns && fns.length) {
@@ -25,10 +22,7 @@ async function FunctionsApiResolver(cx) {
             const [namespace, ...functionPath] = normallizedPath;
             if (!functionPath.length) {
                 result[i] = {
-                    code: 400,
-                    success: false,
-                    msg: `the item of '$fns' is invalid. eg: 'namespace/method'`,
-                    data: []
+                    msg: `the item of '$fns' is invalid. eg: 'namespace/method'`
                 };
             }
             else {
@@ -36,29 +30,18 @@ async function FunctionsApiResolver(cx) {
                 let [module] = container.resolve(namespace);
                 if (!module) {
                     result[i] = {
-                        code: 500,
-                        success: false,
-                        msg: `functions is not exists.`,
-                        data: []
+                        msg: `functions is not exists.`
                     };
                 }
                 else {
                     const fn = module[functionPath[0]];
                     if (utils_1.getArgType(fn).isFunction) {
                         const data = await fn.call(cx, cx, vars[i] || {}); // bind context
-                        result[i] = {
-                            code: 200,
-                            success: true,
-                            msg: 'ok',
-                            data
-                        };
+                        result[i] = data;
                     }
                     else {
                         result[i] = {
-                            code: 500,
-                            success: false,
-                            msg: `please check the function '${functionPath}'`,
-                            data: []
+                            msg: `please check the function '${functionPath}'`
                         };
                     }
                 }
@@ -128,6 +111,12 @@ function functionsApiMiddleware(options) {
         }
         if (cx.method.toLowerCase() === 'post') {
             const body = cx.request.body || {};
+            if (!utils_1.getArgType(body.$fns).isArray) {
+                body.$fns = [body.$fns];
+            }
+            if (!utils_1.getArgType(body.$vars).isArray) {
+                body.$vars = [body.$vars];
+            }
             functionsApiOptions = {
                 ...functionsApiOptions,
                 ...body
@@ -136,7 +125,9 @@ function functionsApiMiddleware(options) {
         const { $vars, $fns } = functionsApiOptions;
         if (!$fns.length) {
             cx.status = 400;
-            return cx.body = `the '$fns' expected to be send.`;
+            return cx.body = {
+                msg: `the '$fns' expected to be send.`
+            };
         }
         // no matter GET or POST, get value from cx.variables
         cx.vars = $vars;
@@ -145,15 +136,10 @@ function functionsApiMiddleware(options) {
             const result = await FunctionsApiResolver(cx);
             if (result.length === 1) {
                 const [res] = result;
-                const { code, ...rest } = res;
-                cx.status = code;
-                cx.body = rest;
+                cx.body = res;
             }
             else {
-                cx.body = {
-                    success: true,
-                    data: result
-                };
+                cx.body = result;
             }
         }
         else {
