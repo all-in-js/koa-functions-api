@@ -45,7 +45,7 @@ async function FunctionsApiResolver(cx) {
                 else {
                     const fn = module[functionPath[0]];
                     if (utils_1.getArgType(fn).isFunction) {
-                        const data = await fn.call(cx, cx, vars[i]); // bind context
+                        const data = await fn.call(cx, cx, vars[i] || {}); // bind context
                         result[i] = {
                             code: 200,
                             success: true,

@@ -10,22 +10,20 @@ const defaultOptions = {
 
 /**
  * types start */
-type ParamItem = { [key: string]: any };
-
 interface IFunctionsApiOptions {
-  $vars: [ParamItem];
+  $vars: [any];
   $fns: [string];
 }
 
 interface functionsApiContext {
-  vars: [ParamItem];
+  vars: [any];
   fns: [string];
 }
 
 // 扩展外部context
 export type ExtendContext<ExtraContext> = Koa.Context & functionsApiContext & ExtraContext;
 
-type FResolver<ExtraContext> = (cx: ExtendContext<ExtraContext>, vars: ParamItem) => any;
+type FResolver<ExtraContext> = (cx: ExtendContext<ExtraContext>, vars: any) => any;
 
 interface IOptions<ExtraContext> {
   path?: string;

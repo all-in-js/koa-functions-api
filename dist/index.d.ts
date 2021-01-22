@@ -1,15 +1,10 @@
 import Koa from 'koa';
-/**
- * types start */
-declare type ParamItem = {
-    [key: string]: any;
-};
 interface functionsApiContext {
-    vars: [ParamItem];
+    vars: [any];
     fns: [string];
 }
 export declare type ExtendContext<ExtraContext> = Koa.Context & functionsApiContext & ExtraContext;
-declare type FResolver<ExtraContext> = (cx: ExtendContext<ExtraContext>, vars?: ParamItem) => any;
+declare type FResolver<ExtraContext> = (cx: ExtendContext<ExtraContext>, vars: any) => any;
 interface IOptions<ExtraContext> {
     path?: string;
     namespace?: string;
