@@ -29,6 +29,7 @@ interface IOptions<ExtraContext> {
   path?: string;
   namespace?: string;
   functions?: FResolver<ExtraContext>[];
+  errorHandler?: (cx: ExtendContext<ExtraContext>, error: any) => any;
 }
 
 interface IResult {
@@ -172,12 +173,20 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
     cx.fns = $fns;
 
     if (cx.path === apiPath) {
-      const result = await FunctionsApiResolver(cx);
-      if (result.length === 1) {
-        const [res] = result;
-        cx.body = res;
-      } else {
-        cx.body = result;
+      try {
+        // 接收具体函数执行时的error
+        const result = await FunctionsApiResolver(cx);
+        if (result.length === 1) {
+          const [res] = result;
+          cx.body = res;
+        } else {
+          cx.body = result;
+        }
+      } catch (e) {
+        const { errorHandler } = options || {};
+        if (errorHandler && getArgType(errorHandler).isFunction) {
+          errorHandler.call(cx, cx, e);
+        }
       }
     } else {
       // extra routes

@@ -133,13 +133,22 @@ function functionsApiMiddleware(options) {
         cx.vars = $vars;
         cx.fns = $fns;
         if (cx.path === apiPath) {
-            const result = await FunctionsApiResolver(cx);
-            if (result.length === 1) {
-                const [res] = result;
-                cx.body = res;
+            try {
+                // 接收具体函数执行时的error
+                const result = await FunctionsApiResolver(cx);
+                if (result.length === 1) {
+                    const [res] = result;
+                    cx.body = res;
+                }
+                else {
+                    cx.body = result;
+                }
             }
-            else {
-                cx.body = result;
+            catch (e) {
+                const { errorHandler } = options || {};
+                if (errorHandler && utils_1.getArgType(errorHandler).isFunction) {
+                    errorHandler.call(cx, cx, e);
+                }
             }
         }
         else {
