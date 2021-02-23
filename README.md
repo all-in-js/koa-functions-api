@@ -48,7 +48,11 @@ app.use(functionsApiMiddleware({
 
 ### 前端使用
 
-* **fetch**
+固定接收前端传过来的两个参数:
+* **$fns:** 请求的函数服务，格式为 {namespace}/{fnName}，组合模式下为数组即可
+* **$vars:** 对应函数服务需要的参数，组合模式下为数组，与 $fns 一一对应
+
+
 ```js
 fetch('/api/functions', {
   method: 'POST',
