@@ -14,13 +14,13 @@
 * **安装**
 
 ```bash
-yarn add koa-functions-api
+yarn add @all-in-js/koa-functions-api
 ```
 
 * **使用中间件**
 
 ```js
-import { functionsApiMiddleware } from 'koa-functions-api';
+import { functionsApiMiddleware } from '@all-in-js/koa-functions-api';
 
 app.use(functionsApiMiddleware({
   // path: '/api/functions',
@@ -66,7 +66,7 @@ fetch('/api/functions', {
 });
 ```
 
-> 直接使用 fetch 稍显麻烦？使用 [fetch-functions-api](https://github.com/famanoder/fetch-functions-api) 快速上手！
+> 直接使用 fetch 稍显麻烦？使用 [fetch-functions-api](https://github.com/all-in-js/fetch-functions-api) 快速上手！
 
 // TODO:
 函数执行的信息统计；

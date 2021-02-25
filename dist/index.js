@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = require("@iuv-tools/utils");
-const injector_1 = require("@eryue/injector");
+const utils_1 = require("@all-in-js/utils");
+const injector_1 = require("@all-in-js/injector");
 const defaultOptions = {
     path: '/api/functions',
     namespace: 'api',
@@ -80,20 +80,22 @@ function functionsApiMiddleware(options) {
         // TODO: support others method
         if (cx.method.toLowerCase() === 'get') {
             let query = cx.query || {};
+            const fns = query.$fns;
+            const vars = query.$vars;
             try {
-                if (/^\[.*?\]$/.test(query.$fns)) {
-                    query.$fns = JSON.parse(query.$fns);
+                if (/^\[.*?\]$/.test(fns)) {
+                    query.$fns = JSON.parse(fns);
                 }
                 else {
-                    query.$fns = [query.$fns];
+                    query.$fns = [fns];
                 }
-                if (/^\[.*?\]$/.test(query.$vars)) {
+                if (/^\[.*?\]$/.test(vars)) {
                     // 组合模式传值
-                    query.$vars = JSON.parse(query.$vars);
+                    query.$vars = JSON.parse(vars);
                 }
-                else if (/^\{.*\}$/.test(query.$vars)) {
+                else if (/^\{.*\}$/.test(vars)) {
                     // 非组合模式传值
-                    query.$vars = [JSON.parse(query.$vars)];
+                    query.$vars = [JSON.parse(vars)];
                 }
                 else {
                     // 非法格式传值

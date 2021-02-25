@@ -1,6 +1,6 @@
 import Koa from 'koa';
-import { getArgType, log } from '@iuv-tools/utils';
-import { ContainerClass } from '@eryue/injector';
+import { getArgType, log } from '@all-in-js/utils';
+import { ContainerClass } from '@all-in-js/injector';
 
 const defaultOptions = {
   path: '/api/functions',
@@ -116,21 +116,23 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
     // TODO: support others method
     if (cx.method.toLowerCase() === 'get') {
       let query = cx.query || {};
+      const fns = query.$fns as string;
+      const vars = query.$vars as string;
       try {
-        if (/^\[.*?\]$/.test(query.$fns)) {
-          query.$fns = JSON.parse(query.$fns);
+        if (/^\[.*?\]$/.test(fns)) {
+          query.$fns = JSON.parse(fns);
         } else {
-          query.$fns = [query.$fns];
+          query.$fns = [fns];
         }
-        if (/^\[.*?\]$/.test(query.$vars)) {
+        if (/^\[.*?\]$/.test(vars)) {
           // 组合模式传值
-          query.$vars = JSON.parse(query.$vars);
-        } else if (/^\{.*\}$/.test(query.$vars)) {
+          query.$vars = JSON.parse(vars);
+        } else if (/^\{.*\}$/.test(vars)) {
           // 非组合模式传值
-          query.$vars = [JSON.parse(query.$vars)];
+          query.$vars = [JSON.parse(vars)];
         } else {
           // 非法格式传值
-          query.$vars = [{}];
+          query.$vars = [{} as any];
         }
       } catch(e) {
         console.log(e);

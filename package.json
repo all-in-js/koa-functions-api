@@ -1,31 +1,38 @@
 {
-  "name": "koa-functions-api",
-  "version": "1.0.7",
+  "name": "@all-in-js/koa-functions-api",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "license": "MIT",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/famanoder/koa-functions-api.git"
+    "url": "https://github.com/all-in-js/koa-functions-api"
   },
   "author": "famanoder",
   "scripts": {
     "prepublishOnly": "rm -rf dist && tsc"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
-    "@eryue/injector": "^1.2.3",
-    "@iuv-tools/utils": "^1.0.0-beta.2",
-    "@types/koa": "^2.11.6",
-    "koa": "^2.13.0"
+    "@all-in-js/injector": "^1.0.3",
+    "@all-in-js/utils": "^1.0.1",
+    "@types/koa": "^2.11.6"
   },
-  "bugs": {
-    "url": "https://github.com/famanoder/koa-functions-api/issues"
-  },
-  "homepage": "https://github.com/famanoder/koa-functions-api.git",
   "keywords": [
     "koa",
     "single route",
     "router",
     "function api"
-  ]
+  ],
+  "devDependencies": {
+    "koa": "^2.13.1"
+  },
+  "peerDependencies": {
+    "koa": "^2.13.1"
+  }
 }
