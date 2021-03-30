@@ -44,7 +44,7 @@ interface FnsObject<ExtraContext> {
 
 const container = new ContainerClass();
 
-async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext>) {
+async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext>, apiPath: string) {
   let result: [IResult] = [{
     msg: 'success'
   }];
@@ -62,7 +62,7 @@ async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext
         };
       } else {
         // resolve stored fns
-        let [module] = container.resolve(namespace);
+        let [module] = container.resolve(apiPath);
         if (!module) {
           result[i] = {
             msg: `functions is not exists.`
@@ -89,7 +89,7 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
   if (!getArgType(options).isObject) options = defaultOptions;
   options = Object.assign(defaultOptions, options);
 
-  const { path: apiPath, namespace, functions } = options;
+  const { path: apiPath, functions } = options;
   // store fns as an object
   const fns = (functions as FResolver<ExtraContext>[]).reduce((curr: FnsObject<ExtraContext>, item) => {
     if (getArgType(item).isFunction) {
@@ -106,7 +106,7 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
   }, {});
 
   // store fns
-  container.add(namespace as string, fns);
+  container.add(apiPath as string, fns);
 
   return async (cx: ExtendContext<ExtraContext>, next: Koa.Next) => {
     let functionsApiOptions: IFunctionsApiOptions = {
@@ -177,7 +177,7 @@ export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraCon
     if (cx.path === apiPath) {
       try {
         // 接收具体函数执行时的error
-        const result = await FunctionsApiResolver(cx);
+        const result = await FunctionsApiResolver(cx, apiPath);
         if (result.length === 1) {
           const [res] = result;
           cx.body = res;
