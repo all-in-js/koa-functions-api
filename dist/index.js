@@ -9,7 +9,7 @@ const defaultOptions = {
 };
 /** types end */
 const container = new injector_1.ContainerClass();
-async function FunctionsApiResolver(cx) {
+async function FunctionsApiResolver(cx, apiPath) {
     let result = [{
             msg: 'success'
         }];
@@ -27,7 +27,7 @@ async function FunctionsApiResolver(cx) {
             }
             else {
                 // resolve stored fns
-                let [module] = container.resolve(namespace);
+                let [module] = container.resolve(apiPath);
                 if (!module) {
                     result[i] = {
                         msg: `functions is not exists.`
@@ -51,10 +51,19 @@ async function FunctionsApiResolver(cx) {
     return result;
 }
 function functionsApiMiddleware(options) {
-    if (!utils_1.getArgType(options).isObject)
-        options = defaultOptions;
-    options = Object.assign(defaultOptions, options);
-    const { path: apiPath, namespace, functions } = options;
+    let opts = options;
+    if (!utils_1.getArgType(opts).isObject)
+        opts = defaultOptions;
+    if (!opts.path) {
+        opts.path = defaultOptions.path;
+    }
+    if (!opts.namespace) {
+        opts.namespace = defaultOptions.namespace;
+    }
+    if (!opts.functions) {
+        opts.functions = defaultOptions.functions;
+    }
+    const { path: apiPath, functions } = opts;
     // store fns as an object
     const fns = functions.reduce((curr, item) => {
         if (utils_1.getArgType(item).isFunction) {
@@ -71,7 +80,7 @@ function functionsApiMiddleware(options) {
         return curr;
     }, {});
     // store fns
-    container.add(namespace, fns);
+    container.add(apiPath, fns);
     return async (cx, next) => {
         let functionsApiOptions = {
             $vars: [{}],
@@ -137,7 +146,7 @@ function functionsApiMiddleware(options) {
         if (cx.path === apiPath) {
             try {
                 // 接收具体函数执行时的error
-                const result = await FunctionsApiResolver(cx);
+                const result = await FunctionsApiResolver(cx, apiPath);
                 if (result.length === 1) {
                     const [res] = result;
                     cx.body = res;

@@ -86,10 +86,22 @@ async function FunctionsApiResolver<ExtraContext>(cx: ExtendContext<ExtraContext
 }
 
 export function functionsApiMiddleware<ExtraContext>(options?: IOptions<ExtraContext>) {
-  if (!getArgType(options).isObject) options = defaultOptions;
-  options = Object.assign(defaultOptions, options);
+  let opts = options as IOptions<ExtraContext>;
+  if (!getArgType(opts).isObject) opts = defaultOptions;
+  
+  if (!opts.path) {
+    opts.path = defaultOptions.path;
+  }
 
-  const { path: apiPath, functions } = options;
+  if (!opts.namespace) {
+    opts.namespace = defaultOptions.namespace;
+  }
+
+  if (!opts.functions) {
+    opts.functions = defaultOptions.functions;
+  }
+
+  const { path: apiPath, functions } = opts;
   // store fns as an object
   const fns = (functions as FResolver<ExtraContext>[]).reduce((curr: FnsObject<ExtraContext>, item) => {
     if (getArgType(item).isFunction) {
